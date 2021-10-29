@@ -1,8 +1,8 @@
 import styled from 'styled-components';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
+import JSONEditor from './JsonEditor';
 
 import SwitchToggle from '../ui/SwitchToggle';
-import AddNameComponent from './AddNameComponent';
 
 import { generateSanta } from '../helpers';
 
@@ -16,6 +16,14 @@ const GenerateSantaButton = styled.button`
   color: white;
   font-size: 18px;
   border: none;
+  ${props => props.disabled
+    ? (`
+      opacity: 0.5;
+      pointer-events: none,
+      cursor: not-allowed
+    `)
+    : ''
+  }
 `;
 
 const ButtonWrapper = styled.div`
@@ -47,36 +55,28 @@ const NameWrapper = styled.div`
   width: 5em;
 `;
 
-// TODO: Temp addressMap, retrieve map from interface
-const addressMap = {
-  Ivan: "ivan.pezzoni@gmail.com",
-  Emma: "lascogna@gmail.com",
-  Filippo: "redeneck@gmail.com",
-  Cecilia: "lascogna@gmail.com",
-  Aleo: "Aleo@aa",
-  Alea: "Alea@aa",
-  Erica: "Erica@bb",
-  Poddi: "Poddi@cc",
-  Nic: "Nic@dd",
-  Giada: "Giada@bb",
-  Carva: "Carva@mm",
-  Enrico: "Enry@bbb"
-};
-
-const exc = {
-  Ivan: ["Emma", "Filippo"],
-  Emma: ["Ivan", "Filippo"],
-  Filippo: ["Cecilia", "Emma", "Ivan"],
-  Cecilia: ["Filippo"],
-  Aleo: ["Alea"],
-  Alea: ["Aleo"],
-  Erica: ["Poddi"],
-  Poddi: ["Erica"],
-  Nic: ["Giada"],
-  Giada: ["Nic"],
-  Carva: [],
-  Enrico: []
-};
+const placeholder = [
+  {
+    name: "Mario",
+    email: "mmmm@bbbb.it",
+    exceptions: ["Luigi"]
+  },
+  {
+    name: "Luigi",
+    email: "mmmm@bbbb.it",
+    exceptions: ["Luigi"]
+  },
+  {
+    name: "Bowser",
+    email: "mmmm@bbbb.it",
+    exceptions: []
+  },
+  {
+    name: "Wario",
+    email: "mmmm@bbbb.it",
+    exceptions: []
+  }
+];
 
 const getSecretSantaMessage = (sender, receiver) => {
   return `Ciao ${sender}, <br/> Il tuo secret santa di quest'anno e' ${receiver}.`;
@@ -105,36 +105,64 @@ const sendSecretSantaMails = (picks, addressMap, exceptions) => {
 };
 
 const SecretSantaComponent = () => {
-  const [shouldPrintResults, setShouldPrintResults] = useState(false);
+  const [shouldPrintResults, setShouldPrintResults] = useState(true);
   const [picks, setPicks] = useState({});
+  const [data, setData] = useState([]);
+
+  const { addressMap, exc } = useMemo(
+    () => {
+      return data.reduce((acc, d) => {
+        return Object.assign({}, acc, {
+          addressMap: Object.assign({}, acc.addressMap, {
+            [d.name]: d.email
+          }),
+          exc: Object.assign({}, acc.exc, {
+            [d.name]: d.exceptions
+          })
+        })
+      }, {});
+    },
+    [data]
+  );
+  console.log(addressMap, exc);
 
   const generateSantaCb = useCallback(() => {
-    const picks = generateSanta(addressMap, exc);
-    setPicks(picks);
+    const p = generateSanta(addressMap, exc);
+    setPicks(p);
     if (shouldPrintResults) {
-      console.log(picks);
+      console.log(p);
     }
-  }, [setPicks, shouldPrintResults]);
+  }, [addressMap, exc, shouldPrintResults]);
 
   const onPrintResultsChange = useCallback(() => {
     setShouldPrintResults(!shouldPrintResults);
   }, [shouldPrintResults]);
 
+  const onChangeData = useCallback((newData) => {
+    console.log('json ', newData);
+    setData(newData);
+  }, [setData]);
+
   return (
     <GeneralWrapper>
-      <AddNameComponent/>
-      <SwitchToggle
+      <JSONEditor
+        json={placeholder}
+        onChangeJSON={onChangeData}
+      />
+      {/* <SwitchToggle
         label="Print results"
         onClick={onPrintResultsChange}
-      />
+      /> */}
       <ButtonWrapper>
         <GenerateSantaButton
+          disabled={data.length === 0}
           onClick={generateSantaCb}
         >
           Generate Santa!
         </GenerateSantaButton>
       </ButtonWrapper>
-      {
+      {shouldPrintResults ? (
+        // TODO: Move this in separate function
         Object.keys(picks).length > 0 ? (
           <PicksTable>
             <Pick>
@@ -155,7 +183,7 @@ const SecretSantaComponent = () => {
             }
           </PicksTable>
         ) : null
-      }
+      ) : null}
     </GeneralWrapper>
   );
 }

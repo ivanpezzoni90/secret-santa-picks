@@ -75,6 +75,7 @@ export const generateSanta = (addressMap, exceptions) => {
 
   if(picks === null) {
     alert("WARNING! CONSTRAINTS TOO HIGH, IT IS NOT POSSIBLE TO DRAW PICKS");
+    return {};
   } else {
     if (testSecretSantaResults(picks, exceptions)) {
       return picks;

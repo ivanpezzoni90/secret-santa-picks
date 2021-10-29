@@ -53,7 +53,7 @@ const Switch = styled.label`
   }
 `;
 
-const SwitchToggle = ({ checked = false, color = "#ba0c2f", label, onClick }) => {
+const SwitchToggle = ({ checked = true, color = "#ba0c2f", label, onClick }) => {
   const [toggle, setToggle] = useState(checked);
 
   const onClickCb = useCallback(() => {
