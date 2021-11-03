@@ -7,6 +7,7 @@ import "jsoneditor/dist/jsoneditor.css";
 
 const EditorWrapper = styled.div`
   height: 20em;
+  padding-bottom: 2em;
 `;
 
 const Editor = (props) => {

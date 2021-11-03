@@ -1,8 +1,8 @@
 import styled from 'styled-components';
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo, Fragment } from 'react';
 import JSONEditor from './JsonEditor';
 
-import SwitchToggle from '../ui/SwitchToggle';
+import Checkbox from '../ui/Checkbox';
 
 import { generateSanta } from '../helpers';
 
@@ -35,6 +35,7 @@ const GeneralWrapper = styled.div`
   display: flex;
   flex-direction: column;
   flex: 1;
+  align-items: center;
 `;
 
 const PicksTable = styled.div`
@@ -82,9 +83,27 @@ const getSecretSantaMessage = (sender, receiver) => {
   return `Ciao ${sender}, <br/> Il tuo secret santa di quest'anno e' ${receiver}.`;
 };
 
-const printSecretSantaResults = (picks, exceptions) => {
-  console.log(picks);
-  // TODO: PRINT RESULTS INSIDE REACT APP
+const printResults = (picks) => {
+  return Object.keys(picks).length > 0 ? (
+    <PicksTable>
+      <Pick>
+        <NameWrapper>Gifter</NameWrapper>
+        <NameWrapper>Receiver</NameWrapper>
+      </Pick>
+      {
+        Object.entries(picks).map(([name, pick]) => {
+          return (
+            <Pick
+              key={`${name}_${pick}`}
+            >
+              <NameWrapper>{name}</NameWrapper>
+              <NameWrapper>{pick}</NameWrapper>
+            </Pick>
+          )
+        })
+      }
+    </PicksTable>
+  ) : null
 };
 
 const sendSecretSantaMails = (picks, addressMap, exceptions) => {
@@ -144,47 +163,30 @@ const SecretSantaComponent = () => {
   }, [setData]);
 
   return (
-    <GeneralWrapper>
+    <Fragment>
       <JSONEditor
         json={placeholder}
         onChangeJSON={onChangeData}
       />
-      {/* <SwitchToggle
-        label="Print results"
-        onClick={onPrintResultsChange}
-      /> */}
-      <ButtonWrapper>
-        <GenerateSantaButton
-          disabled={data.length === 0}
-          onClick={generateSantaCb}
-        >
-          Generate Santa!
-        </GenerateSantaButton>
-      </ButtonWrapper>
-      {shouldPrintResults ? (
-        // TODO: Move this in separate function
-        Object.keys(picks).length > 0 ? (
-          <PicksTable>
-            <Pick>
-              <NameWrapper>Gifter</NameWrapper>
-              <NameWrapper>Receiver</NameWrapper>
-            </Pick>
-            {
-              Object.entries(picks).map(([name, pick]) => {
-                return (
-                  <Pick
-                    key={`${name}_${pick}`}
-                  >
-                    <NameWrapper>{name}</NameWrapper>
-                    <NameWrapper>{pick}</NameWrapper>
-                  </Pick>
-                )
-              })
-            }
-          </PicksTable>
-        ) : null
-      ) : null}
-    </GeneralWrapper>
+      <GeneralWrapper>
+        <Checkbox
+          checked={shouldPrintResults}
+          label="View results"
+          onChange={onPrintResultsChange}
+        />
+        <ButtonWrapper>
+          <GenerateSantaButton
+            disabled={data.length === 0}
+            onClick={generateSantaCb}
+          >
+            Generate Santa!
+          </GenerateSantaButton>
+        </ButtonWrapper>
+        {shouldPrintResults ? (
+          printResults(picks)
+        ) : null}
+      </GeneralWrapper>
+    </Fragment>
   );
 }
 
