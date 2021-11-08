@@ -82,3 +82,7 @@ export const generateSanta = (addressMap, exceptions) => {
     }
   }
 };
+
+export const generateID = ()=> {
+  return Math.random().toString(36).slice(2);
+}

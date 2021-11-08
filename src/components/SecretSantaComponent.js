@@ -1,10 +1,11 @@
 import styled from 'styled-components';
 import React, { useCallback, useState, useMemo, Fragment } from 'react';
+import emailjs, { init } from 'emailjs-com';
 import JSONEditor from './JsonEditor';
-
 import Checkbox from '../ui/Checkbox';
 
 import { generateSanta } from '../helpers';
+import ParticipantsComponent from './ParticipantsComponent';
 
 const GenerateSantaButton = styled.button`
   padding: 1em;
@@ -80,6 +81,7 @@ const placeholder = [
 ];
 
 const getSecretSantaMessage = (sender, receiver) => {
+  // TODO: Customize/locale message?
   return `Ciao ${sender}, <br/> Il tuo secret santa di quest'anno e' ${receiver}.`;
 };
 
@@ -106,25 +108,32 @@ const printResults = (picks) => {
   ) : null
 };
 
-const sendSecretSantaMails = (picks, addressMap, exceptions) => {
+const sendSecretSantaMails = (picks, addressMap) => {
     Object.keys(picks).forEach(pick => {
       console.log('Secret santa for ', pick, ' is ', picks[pick]);
       console.log('Sending email to ', addressMap[pick], ': "Your secret santa is ', picks[pick], '".');
       console.log('Email body: ', getSecretSantaMessage(pick, picks[pick]));
-      // TODO: Capire come usare SMTPjs
-      // Email.send("{sender}",
-      //   addressMap[pick],
-      //   "Secret Santa",
-      //   getSecretSantaMessage(pick, picks[pick]),
-      //   "{smtp}",
-      //   "{account}",
-      //   "{code}",
-      //   function done(message) { console.log("sent", message) });
+
+      // TODO: INSERT EMAILJS service and template id
+      // emailjs.send('default_service', 'template_xxxxxxxxx', {
+      //   user_name: pick,
+      //   user_email: addressMap[pick],
+      //   message: getSecretSantaMessage(pick, picks[pick])
+      // })
+      // .then(function(response) {
+      //   console.log('SUCCESS!', response.status, response.text);
+      // }, function(error) {
+      //   console.log('FAILED...', error);
+      // });
     });
 };
 
+// TODO: Insert EmailJS user
+// init("");
+
 const SecretSantaComponent = () => {
   const [shouldPrintResults, setShouldPrintResults] = useState(true);
+  const [shouldSendEmails, setShouldSendEmails] = useState(false);
   const [picks, setPicks] = useState({});
   const [data, setData] = useState([]);
 
@@ -151,11 +160,18 @@ const SecretSantaComponent = () => {
     if (shouldPrintResults) {
       console.log(p);
     }
-  }, [addressMap, exc, shouldPrintResults]);
+    if (shouldSendEmails) {
+      sendSecretSantaMails(p, addressMap);
+    }
+  }, [addressMap, exc, shouldPrintResults, shouldSendEmails]);
 
   const onPrintResultsChange = useCallback(() => {
     setShouldPrintResults(!shouldPrintResults);
   }, [shouldPrintResults]);
+
+  const onSendEmailsChange = useCallback(() => {
+    setShouldSendEmails(!shouldSendEmails);
+  }, [shouldSendEmails]);
 
   const onChangeData = useCallback((newData) => {
     console.log('json ', newData);
@@ -169,10 +185,18 @@ const SecretSantaComponent = () => {
         onChangeJSON={onChangeData}
       />
       <GeneralWrapper>
+        {/* <ParticipantsComponent
+          addressMap={addressMap}
+        /> */}
         <Checkbox
           checked={shouldPrintResults}
           label="View results"
           onChange={onPrintResultsChange}
+        />
+        <Checkbox
+          checked={shouldSendEmails}
+          label="Send emails"
+          onChange={onSendEmailsChange}
         />
         <ButtonWrapper>
           <GenerateSantaButton
