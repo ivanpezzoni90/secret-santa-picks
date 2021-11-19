@@ -6,6 +6,7 @@ import JSONEditor from "jsoneditor";
 import "jsoneditor/dist/jsoneditor.css";
 
 const EditorWrapper = styled.div`
+  width: 50em;
   height: 20em;
   padding-bottom: 2em;
 `;

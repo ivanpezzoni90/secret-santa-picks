@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import React, { Fragment, useCallback, useMemo } from 'react';
+import React, { Fragment, useCallback, useState } from 'react';
 import Input from '../ui/Input';
 import { FaTrashAlt } from "react-icons/fa";
 import Button from '../ui/Button';
@@ -56,40 +56,31 @@ const InputComponent = ({ label, onBlur, value, index, onDelete }) => {
   );
 };
 
-const ParticipantsComponent = (props) => {
-  const {
-    onUpdateNames,
-    addressMap
-  } = props;
-
-  const names = useMemo(() => {
-    return addressMap.map(a => a.name);
-  }, [addressMap]);
-
-  const onUpdateNamesCb = useCallback((newNames) => {
-    onUpdateNames(newNames);
-  }, [onUpdateNames]);
+const ExceptionsComponent = (props) => {
+  const [names, setNames] = useState(['']);
 
   const onBlurCb = useCallback((index, value) => {
     const newNames = [...names];
     newNames[index] = value;
-    onUpdateNamesCb(newNames);
-  }, [names, onUpdateNamesCb]);
+    setNames(newNames);
+  }, [names]);
 
   const onDeleteCb = useCallback((index) => {
     const newNames = [...names];
     newNames.splice(index, 1);
-    onUpdateNamesCb(newNames);
-  }, [names, onUpdateNamesCb]);
+    setNames(newNames);
+  }, [names]);
 
   const onAddCb = useCallback(() => {
-    onUpdateNamesCb(names.concat(''));
-  }, [names, onUpdateNamesCb]);
+    setNames(names.concat(''));
+  }, [names]);
+
+  console.log('Names ', names);
 
   return (
     <Fragment>
       <TitleWrapper>
-        Insert participants names
+        Insert exceptions (optional)
       </TitleWrapper>
       <Container>
         {names.map((n, i) => (
@@ -113,7 +104,8 @@ const ParticipantsComponent = (props) => {
   )
 };
 
-ParticipantsComponent.defaultProps = {
+ExceptionsComponent.defaultProps = {
+
 };
 
-export default ParticipantsComponent;
+export default ExceptionsComponent;

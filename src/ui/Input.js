@@ -11,7 +11,15 @@ const calculateInputLength = (length) => ({
   full: '100%'
 }[length]);
 
+const calculateInnerInputLength = (length) => ({
+  s: '6em',
+  m: '14em',
+  l: '30em',
+  full: '100%'
+}[length]);
+
 const InputElement = styled.input`
+  width: ${props => (calculateInnerInputLength(props.length))};
 `;
 
 const InputWrapper = styled.div`
@@ -68,6 +76,8 @@ const Input = (props) => {
       length={length}
     >
       <InputElement
+        length={length}
+
         id={id.current}
         type="text"
         value={value}

@@ -3,29 +3,10 @@ import React, { useCallback, useState, useMemo, Fragment } from 'react';
 import emailjs, { init } from 'emailjs-com';
 import JSONEditor from './JsonEditor';
 import Checkbox from '../ui/Checkbox';
+import Button from '../ui/Button';
 
 import { generateSanta } from '../helpers';
 import ParticipantsComponent from './ParticipantsComponent';
-
-const GenerateSantaButton = styled.button`
-  padding: 1em;
-  border-radius: .5em;
-  background-color: #ba0c2f;
-  &:hover {
-    background-color: #d4183e;
-  }
-  color: white;
-  font-size: 18px;
-  border: none;
-  ${props => props.disabled
-    ? (`
-      opacity: 0.5;
-      pointer-events: none,
-      cursor: not-allowed
-    `)
-    : ''
-  }
-`;
 
 const ButtonWrapper = styled.div`
   padding: 2em;
@@ -57,26 +38,21 @@ const NameWrapper = styled.div`
   width: 5em;
 `;
 
+const WizardButtonsWrapper = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+`;
+
+const WizardButton = styled.div`
+  padding: 0.5em 1em 0.5em 1em;
+`;
+
 const placeholder = [
   {
-    name: "Mario",
-    email: "mmmm@bbbb.it",
-    exceptions: ["Luigi"]
-  },
-  {
-    name: "Luigi",
-    email: "mmmm@bbbb.it",
-    exceptions: ["Luigi"]
-  },
-  {
-    name: "Bowser",
-    email: "mmmm@bbbb.it",
-    exceptions: []
-  },
-  {
-    name: "Wario",
-    email: "mmmm@bbbb.it",
-    exceptions: []
+    name: "",
+    email: "",
+    exceptions: [""]
   }
 ];
 
@@ -134,10 +110,15 @@ const sendSecretSantaMails = (picks, addressMap) => {
 const SecretSantaComponent = () => {
   const [shouldPrintResults, setShouldPrintResults] = useState(true);
   const [shouldSendEmails, setShouldSendEmails] = useState(false);
+  // TODO: JSON should not be default once participants feature is completed
+  // const [shouldUseJson, setShouldUseJson] = useState(false);
+  const [shouldUseJson, setShouldUseJson] = useState(true);
+
   const [picks, setPicks] = useState({});
   const [data, setData] = useState([]);
+  const [wizardStatus, setWizardStatus] = useState(0);
 
-  const { addressMap, exc } = useMemo(
+  const { addressMap = [], exc = [] } = useMemo(
     () => {
       return data.reduce((acc, d) => {
         return Object.assign({}, acc, {
@@ -152,7 +133,7 @@ const SecretSantaComponent = () => {
     },
     [data]
   );
-  console.log(addressMap, exc);
+  console.log('map + exc', addressMap, exc);
 
   const generateSantaCb = useCallback(() => {
     const p = generateSanta(addressMap, exc);
@@ -173,43 +154,103 @@ const SecretSantaComponent = () => {
     setShouldSendEmails(!shouldSendEmails);
   }, [shouldSendEmails]);
 
-  const onChangeData = useCallback((newData) => {
-    console.log('json ', newData);
+  const onUseJsonChange = useCallback(() => {
+    setShouldUseJson(!shouldUseJson);
+  }, [shouldUseJson]);
+
+  const onChangeJSONData = useCallback((newData) => {
     setData(newData);
   }, [setData]);
 
+  const onUpdateNames = useCallback((newNames) => {
+    // Generate data from names only
+    const newData = data.length === 0
+      ? newNames.map(n => ({ name: n }))
+      : data.map((d, i) => (Object.assign({}, d, { name: newNames[i] })));
+    setData(newData);
+  }, [data]);
+
+  const onNextWizardStep = useCallback(() => {
+    setWizardStatus(wizardStatus + 1);
+  }, [wizardStatus]);
+
+  const onPreviousWizardStep = useCallback(() => {
+    setWizardStatus(wizardStatus - 1);
+  }, [wizardStatus]);
+
   return (
     <Fragment>
-      <JSONEditor
-        json={placeholder}
-        onChangeJSON={onChangeData}
-      />
       <GeneralWrapper>
-        {/* <ParticipantsComponent
-          addressMap={addressMap}
-        /> */}
-        <Checkbox
-          checked={shouldPrintResults}
-          label="View results"
-          onChange={onPrintResultsChange}
-        />
-        <Checkbox
-          checked={shouldSendEmails}
-          label="Send emails"
-          onChange={onSendEmailsChange}
-        />
-        <ButtonWrapper>
-          <GenerateSantaButton
-            disabled={data.length === 0}
-            onClick={generateSantaCb}
-          >
-            Generate Santa!
-          </GenerateSantaButton>
-        </ButtonWrapper>
-        {shouldPrintResults ? (
-          printResults(picks)
+        {wizardStatus === 0 ? (
+          <Fragment>
+            {/** TODO: Enable checkbox once participants feature is completed */}
+            {/* <Checkbox
+              checked={shouldUseJson}
+              label="Use JSON data"
+              onChange={onUseJsonChange}
+            /> */}
+            {shouldUseJson ? (
+               <JSONEditor
+               json={placeholder}
+               onChangeJSON={onChangeJSONData}
+             />
+            ) : (
+              <ParticipantsComponent
+                addressMap={addressMap}
+                onUpdateNames={onUpdateNames}
+              />
+            )}
+          </Fragment>
+        ) : null}
+        {wizardStatus === 1 ? (
+          <Fragment>
+            <Checkbox
+              checked={shouldPrintResults}
+              label="View results"
+              onChange={onPrintResultsChange}
+            />
+            <Checkbox
+              checked={shouldSendEmails}
+              label="Send emails"
+              onChange={onSendEmailsChange}
+            />
+            <ButtonWrapper>
+              <Button
+                disabled={data.length === 0}
+                label="Generate Santa!"
+                onClick={generateSantaCb}
+              />
+            </ButtonWrapper>
+            {shouldPrintResults ? (
+              printResults(picks)
+            ) : null}
+          </Fragment>
         ) : null}
       </GeneralWrapper>
+      <WizardButtonsWrapper>
+        {wizardStatus !== 0 ? (
+          <WizardButton>
+            <Button
+              label="Previous"
+              color="#666"
+              hoverColor="#666"
+              fontSize="14px"
+              onClick={onPreviousWizardStep}
+            />
+          </WizardButton>
+        ) : null}
+        {wizardStatus !== 1 ? (
+        <WizardButton>
+          <Button
+            label="Next"
+            color="#666"
+            hoverColor="#666"
+            fontSize="14px"
+            onClick={onNextWizardStep}
+          />
+        </WizardButton>
+        ) : null}
+      </WizardButtonsWrapper>
     </Fragment>
   );
 }
