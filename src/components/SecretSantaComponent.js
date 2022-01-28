@@ -7,6 +7,7 @@ import Button from '../ui/Button';
 
 import { generateSanta } from '../helpers';
 import ParticipantsComponent from './ParticipantsComponent';
+import ExceptionsComponent from './ExceptionsComponent';
 
 const ButtonWrapper = styled.div`
   padding: 2em;
@@ -110,30 +111,30 @@ const sendSecretSantaMails = (picks, addressMap) => {
 const SecretSantaComponent = () => {
   const [shouldPrintResults, setShouldPrintResults] = useState(true);
   const [shouldSendEmails, setShouldSendEmails] = useState(false);
-  // TODO: JSON should not be default once participants feature is completed
-  // const [shouldUseJson, setShouldUseJson] = useState(false);
-  const [shouldUseJson, setShouldUseJson] = useState(true);
+  const [shouldUseJson, setShouldUseJson] = useState(false);
 
   const [picks, setPicks] = useState({});
   const [data, setData] = useState([]);
   const [wizardStatus, setWizardStatus] = useState(0);
 
-  const { addressMap = [], exc = [] } = useMemo(
-    () => {
-      return data.reduce((acc, d) => {
-        return Object.assign({}, acc, {
-          addressMap: Object.assign({}, acc.addressMap, {
-            [d.name]: d.email
-          }),
-          exc: Object.assign({}, acc.exc, {
-            [d.name]: d.exceptions
-          })
+  const {
+    addressMap = [],
+    exc = []
+  } = useMemo(() => {
+    return data.reduce((acc, d) => {
+      return Object.assign({}, acc, {
+        addressMap: Object.assign({}, acc.addressMap, {
+          [d.name]: d.email
+        }),
+        exc: Object.assign({}, acc.exc, {
+          [d.name]: d.exceptions
         })
-      }, {});
-    },
+      })
+    }, {});
+  },
     [data]
   );
-  console.log('map + exc', addressMap, exc);
+  console.log('map + exc + data', addressMap, exc, data);
 
   const generateSantaCb = useCallback(() => {
     const p = generateSanta(addressMap, exc);
@@ -164,15 +165,52 @@ const SecretSantaComponent = () => {
 
   const onUpdateNames = useCallback((newNames) => {
     // Generate data from names only
-    const newData = data.length === 0
-      ? newNames.map(n => ({ name: n }))
-      : data.map((d, i) => (Object.assign({}, d, { name: newNames[i] })));
+    const newData = newNames.map(n => ({ name: n }))
+    setData(newData);
+  }, []);
+
+  const onUpdateExceptions = useCallback((exceptions, index) => {
+    const newData = data.map((d, i) => {
+      if (i === index) {
+        return Object.assign({}, d, {
+          exceptions
+        });
+      }
+      return d;
+    });
     setData(newData);
   }, [data]);
 
+  const checkData = useCallback(() => {
+    // Check data integrity after each step
+
+    // Filter out blank names
+    const newData = data.filter(d => d.name !== '');
+    setData(newData);
+
+    if (newData.length > 0) {
+      return true
+    }
+    return false;
+  }, [data]);
+
   const onNextWizardStep = useCallback(() => {
-    setWizardStatus(wizardStatus + 1);
-  }, [wizardStatus]);
+    const valid = checkData();
+    if (valid) {
+      setWizardStatus(wizardStatus + 1);
+    } else {
+      alert('Insert at least one valid name');
+    }
+  }, [wizardStatus, checkData]);
+
+  const onLastWizardStep = useCallback(() => {
+    const valid = checkData();
+    if (valid) {
+      setWizardStatus(2);
+    } else {
+      alert('Insert at least one valid name');
+    }
+  }, [checkData]);
 
   const onPreviousWizardStep = useCallback(() => {
     setWizardStatus(wizardStatus - 1);
@@ -184,11 +222,11 @@ const SecretSantaComponent = () => {
         {wizardStatus === 0 ? (
           <Fragment>
             {/** TODO: Enable checkbox once participants feature is completed */}
-            {/* <Checkbox
+            <Checkbox
               checked={shouldUseJson}
               label="Use JSON data"
               onChange={onUseJsonChange}
-            /> */}
+            />
             {shouldUseJson ? (
                <JSONEditor
                json={placeholder}
@@ -196,13 +234,21 @@ const SecretSantaComponent = () => {
              />
             ) : (
               <ParticipantsComponent
-                addressMap={addressMap}
+                data={data}
                 onUpdateNames={onUpdateNames}
               />
             )}
           </Fragment>
         ) : null}
         {wizardStatus === 1 ? (
+          <Fragment>
+            <ExceptionsComponent
+              data={data}
+              onUpdateExceptions={onUpdateExceptions}
+            />
+          </Fragment>
+        ) : null}
+        {wizardStatus === 2 ? (
           <Fragment>
             <Checkbox
               checked={shouldPrintResults}
@@ -239,14 +285,15 @@ const SecretSantaComponent = () => {
             />
           </WizardButton>
         ) : null}
-        {wizardStatus !== 1 ? (
+        {wizardStatus !== 2 ? (
         <WizardButton>
           <Button
             label="Next"
             color="#666"
             hoverColor="#666"
             fontSize="14px"
-            onClick={onNextWizardStep}
+            // Go to last step when using JSON
+            onClick={shouldUseJson ? onLastWizardStep : onNextWizardStep}
           />
         </WizardButton>
         ) : null}

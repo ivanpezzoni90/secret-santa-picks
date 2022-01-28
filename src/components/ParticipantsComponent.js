@@ -26,6 +26,8 @@ const TitleWrapper = styled.div`
   padding-bottom: 1em;
 `;
 
+const namesPlaceholder = [''];
+
 const InputComponent = ({ label, onBlur, value, index, onDelete }) => {
   const onIconClick = useCallback(() => {
     onDelete(index);
@@ -59,12 +61,14 @@ const InputComponent = ({ label, onBlur, value, index, onDelete }) => {
 const ParticipantsComponent = (props) => {
   const {
     onUpdateNames,
-    addressMap
+    data
   } = props;
 
   const names = useMemo(() => {
-    return addressMap.map(a => a.name);
-  }, [addressMap]);
+    return data.length === 0
+      ? namesPlaceholder
+      : data.map(a => a.name);
+  }, [data]);
 
   const onUpdateNamesCb = useCallback((newNames) => {
     onUpdateNames(newNames);

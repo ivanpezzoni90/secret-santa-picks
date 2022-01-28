@@ -1,81 +1,72 @@
 import styled from 'styled-components';
-import React, { Fragment, useCallback, useState } from 'react';
-import Input from '../ui/Input';
-import { FaTrashAlt } from "react-icons/fa";
-import Button from '../ui/Button';
+import React, { Fragment, useCallback, useMemo } from 'react';
+import { MultiSelect } from "react-multi-select-component";
 
-const InputWrapper = styled.div`
+const AddExceptionWrapper = styled.div`
   padding-bottom: 1em;
   display: flex;
 `;
-const IconWrapper = styled.div`
-  padding-left: 0.5em;
+const NameWrapper = styled.div`
+  padding: 0.5em 1.5em 0.5em 0.5em;
   display: flex;
   align-items: center;
+  flex: 1;
+`;
+const SelectWrapper = styled.div`
+  padding: 0.5em;
+  min-width: 10em;
 `;
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   padding: .5em;
 `;
-const ButtonWrapper = styled.div`
-  padding: 1em 0 2em 0;
-`;
-
 const TitleWrapper = styled.div`
   padding-bottom: 1em;
 `;
 
-const InputComponent = ({ label, onBlur, value, index, onDelete }) => {
-  const onIconClick = useCallback(() => {
-    onDelete(index);
-  }, [index, onDelete]);
+const AddException = ({ name, exc = [], names, onChange, index }) => {
+  const availableNames = names
+    .filter(n => n !== name)
+    .map(n => ({
+      label: n,
+      value: n
+    }));
 
-  const onInputBlur = useCallback((value) => {
-    onBlur(index, value);
-  }, [index, onBlur]);
+  const onSelectChange = useCallback((options) => {
+    const newValues = options.map(o => o.value);
+    onChange(newValues, index);
+  }, [onChange, index]);
 
   return (
-    <InputWrapper>
-      <Input
-        label={label}
-        onBlur={onInputBlur}
-        value={value}
-        length="m"
-      />
-      {index !== 0 ? (
-        <IconWrapper>
-          <FaTrashAlt
-            className="button-icon"
-            color="#666"
-            onClick={onIconClick}
-          />
-        </IconWrapper>
-      ) : null}
-    </InputWrapper>
+    <AddExceptionWrapper>
+      <NameWrapper>
+        {name}
+      </NameWrapper>
+      <SelectWrapper>
+        <MultiSelect
+          options={availableNames}
+          hasSelectAll={false}
+          value={exc}
+          onChange={onSelectChange}
+        />
+      </SelectWrapper>
+    </AddExceptionWrapper>
   );
 };
 
 const ExceptionsComponent = (props) => {
-  const [names, setNames] = useState(['']);
+  const {
+    onUpdateExceptions,
+    data
+  } = props;
 
-  const onBlurCb = useCallback((index, value) => {
-    const newNames = [...names];
-    newNames[index] = value;
-    setNames(newNames);
-  }, [names]);
+  const names = data.map(a => a.name);
 
-  const onDeleteCb = useCallback((index) => {
-    const newNames = [...names];
-    newNames.splice(index, 1);
-    setNames(newNames);
-  }, [names]);
-
-  const onAddCb = useCallback(() => {
-    setNames(names.concat(''));
-  }, [names]);
-
-  console.log('Names ', names);
+  const onExeptionsChange = useCallback((exc, index) => {
+    console.log(exc, index);
+    onUpdateExceptions(exc, index);
+  }, [onUpdateExceptions]);
 
   return (
     <Fragment>
@@ -83,23 +74,17 @@ const ExceptionsComponent = (props) => {
         Insert exceptions (optional)
       </TitleWrapper>
       <Container>
-        {names.map((n, i) => (
-          <InputComponent
-            key={`${n}_${i}`}
-            label={`Name ${i+1}`}
-            value={n}
+        {data.map((d, i) => (
+          <AddException
+            key={`${d.name}_${i}`}
+            name={d.name}
+            names={names}
+            exc={d.exceptions}
             index={i}
-            onBlur={onBlurCb}
-            onDelete={onDeleteCb}
+            onChange={onExeptionsChange}
           />
         ))}
       </Container>
-      <ButtonWrapper>
-        <Button
-          label="Add participant"
-          onClick={onAddCb}
-        />
-      </ButtonWrapper>
     </Fragment>
   )
 };
