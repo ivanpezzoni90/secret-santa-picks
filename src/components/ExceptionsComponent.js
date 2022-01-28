@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import React, { Fragment, useCallback, useMemo } from 'react';
-import { MultiSelect } from "react-multi-select-component";
+import Select from 'react-select'
 
 const AddExceptionWrapper = styled.div`
   padding-bottom: 1em;
@@ -25,7 +25,13 @@ const TitleWrapper = styled.div`
   padding-bottom: 1em;
 `;
 
-const AddException = ({ name, exc = [], names, onChange, index }) => {
+const AddException = ({ value, names, onChange, index }) => {
+  const {
+    name,
+    exceptions,
+    id
+  } = value;
+
   const availableNames = names
     .filter(n => n !== name)
     .map(n => ({
@@ -44,10 +50,12 @@ const AddException = ({ name, exc = [], names, onChange, index }) => {
         {name}
       </NameWrapper>
       <SelectWrapper>
-        <MultiSelect
+        <Select
+          className="basic-multi-select"
+          classNamePrefix="select"
           options={availableNames}
-          hasSelectAll={false}
-          value={exc}
+          isMulti
+          defaultValue={exceptions}
           onChange={onSelectChange}
         />
       </SelectWrapper>
@@ -76,10 +84,9 @@ const ExceptionsComponent = (props) => {
       <Container>
         {data.map((d, i) => (
           <AddException
-            key={`${d.name}_${i}`}
-            name={d.name}
+            key={`${d.id}_${i}`}
             names={names}
-            exc={d.exceptions}
+            value={d}
             index={i}
             onChange={onExeptionsChange}
           />

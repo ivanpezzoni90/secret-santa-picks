@@ -4,6 +4,7 @@ import emailjs, { init } from 'emailjs-com';
 import JSONEditor from './JsonEditor';
 import Checkbox from '../ui/Checkbox';
 import Button from '../ui/Button';
+import { generateID } from '../helpers';
 
 import { generateSanta } from '../helpers';
 import ParticipantsComponent from './ParticipantsComponent';
@@ -49,13 +50,22 @@ const WizardButton = styled.div`
   padding: 0.5em 1em 0.5em 1em;
 `;
 
-const placeholder = [
+const JSONPlaceholder = [
   {
     name: "",
     email: "",
     exceptions: [""]
   }
 ];
+
+const EMPTY_ARRAY = [];
+
+const dataPlaceholder = [{
+  id: generateID(),
+  name: '',
+  email: '',
+  exceptions: []
+}];
 
 const getSecretSantaMessage = (sender, receiver) => {
   // TODO: Customize/locale message?
@@ -114,7 +124,7 @@ const SecretSantaComponent = () => {
   const [shouldUseJson, setShouldUseJson] = useState(false);
 
   const [picks, setPicks] = useState({});
-  const [data, setData] = useState([]);
+  const [data, setData] = useState(dataPlaceholder);
   const [wizardStatus, setWizardStatus] = useState(0);
 
   const {
@@ -127,7 +137,7 @@ const SecretSantaComponent = () => {
           [d.name]: d.email
         }),
         exc: Object.assign({}, acc.exc, {
-          [d.name]: d.exceptions
+          [d.name]: d.exceptions || EMPTY_ARRAY
         })
       })
     }, {});
@@ -163,11 +173,18 @@ const SecretSantaComponent = () => {
     setData(newData);
   }, [setData]);
 
-  const onUpdateNames = useCallback((newNames) => {
-    // Generate data from names only
-    const newData = newNames.map(n => ({ name: n }))
+  const onUpdateParticipants = useCallback((participants) => {
+    const newData = participants.map((p, i) => {
+      // Map exceptions inside participant, or return new participant
+      if (data[i]) {
+        return Object.assign({}, p, {
+          exceptions: data[i].exceptions
+        });
+      }
+      return p;
+    });
     setData(newData);
-  }, []);
+  }, [data]);
 
   const onUpdateExceptions = useCallback((exceptions, index) => {
     const newData = data.map((d, i) => {
@@ -229,13 +246,13 @@ const SecretSantaComponent = () => {
             />
             {shouldUseJson ? (
                <JSONEditor
-               json={placeholder}
+               json={JSONPlaceholder}
                onChangeJSON={onChangeJSONData}
              />
             ) : (
               <ParticipantsComponent
                 data={data}
-                onUpdateNames={onUpdateNames}
+                onUpdateParticipants={onUpdateParticipants}
               />
             )}
           </Fragment>

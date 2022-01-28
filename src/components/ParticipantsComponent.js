@@ -1,8 +1,9 @@
 import styled from 'styled-components';
-import React, { Fragment, useCallback, useMemo } from 'react';
+import React, { Fragment, useCallback } from 'react';
 import Input from '../ui/Input';
 import { FaTrashAlt } from "react-icons/fa";
 import Button from '../ui/Button';
+import { generateID } from '../helpers';
 
 const InputWrapper = styled.div`
   padding-bottom: 1em;
@@ -25,26 +26,59 @@ const ButtonWrapper = styled.div`
 const TitleWrapper = styled.div`
   padding-bottom: 1em;
 `;
+const Spacer = styled.div`
+  padding: 0 0.5em;
+`;
 
-const namesPlaceholder = [''];
+const getEmailLabel = (name, email, label) => {
+  const lbl = `Email for ${name !== ''
+      ? name
+      : label
+    } ${email !== ''
+      ? ''
+      : '(optional)'
+    }`;
+  // Truncate string and add ellipsis
+  return lbl.length > 30
+    ? `${lbl.substring(0, 27)}...`
+    : lbl;
+}
 
 const InputComponent = ({ label, onBlur, value, index, onDelete }) => {
-  const onIconClick = useCallback(() => {
-    onDelete(index);
-  }, [index, onDelete]);
+  const {
+    id,
+    name,
+    email
+  } = value;
 
-  const onInputBlur = useCallback((value) => {
-    onBlur(index, value);
-  }, [index, onBlur]);
+  const onIconClick = useCallback(() => {
+    onDelete(id);
+  }, [id, onDelete]);
+
+  const onInputBlur = useCallback((type) => {
+    return (val) => {
+      onBlur(id, val, type);
+    }
+  }, [id, onBlur]);
 
   return (
     <InputWrapper>
-      <Input
-        label={label}
-        onBlur={onInputBlur}
-        value={value}
-        length="m"
-      />
+      <Spacer>
+        <Input
+          label={label}
+          onBlur={onInputBlur('name')}
+          value={name}
+          length="m"
+        />
+      </Spacer>
+      <Spacer>
+        <Input
+          label={getEmailLabel(name, email, label)}
+          onBlur={onInputBlur('email')}
+          value={email}
+          length="m"
+        />
+      </Spacer>
       {index !== 0 ? (
         <IconWrapper>
           <FaTrashAlt
@@ -60,35 +94,38 @@ const InputComponent = ({ label, onBlur, value, index, onDelete }) => {
 
 const ParticipantsComponent = (props) => {
   const {
-    onUpdateNames,
+    onUpdateParticipants,
     data
   } = props;
 
-  const names = useMemo(() => {
-    return data.length === 0
-      ? namesPlaceholder
-      : data.map(a => a.name);
-  }, [data]);
+  const onUpdateParticipantsCb = useCallback((newNames) => {
+    onUpdateParticipants(newNames);
+  }, [onUpdateParticipants]);
 
-  const onUpdateNamesCb = useCallback((newNames) => {
-    onUpdateNames(newNames);
-  }, [onUpdateNames]);
+  const onBlurCb = useCallback((id, value, type) => {
+    const newData = data.map(d => {
+      if (d.id === id) {
+        return Object.assign({}, d, {
+          [type]: value
+        })
+      }
+      return d;
+    });
+    onUpdateParticipantsCb(newData);
+  }, [data, onUpdateParticipantsCb]);
 
-  const onBlurCb = useCallback((index, value) => {
-    const newNames = [...names];
-    newNames[index] = value;
-    onUpdateNamesCb(newNames);
-  }, [names, onUpdateNamesCb]);
-
-  const onDeleteCb = useCallback((index) => {
-    const newNames = [...names];
-    newNames.splice(index, 1);
-    onUpdateNamesCb(newNames);
-  }, [names, onUpdateNamesCb]);
+  const onDeleteCb = useCallback((id) => {
+    const newData = data.filter(d => d.id !== id);
+    onUpdateParticipantsCb(newData);
+  }, [data, onUpdateParticipantsCb]);
 
   const onAddCb = useCallback(() => {
-    onUpdateNamesCb(names.concat(''));
-  }, [names, onUpdateNamesCb]);
+    onUpdateParticipantsCb(data.concat({
+      id: generateID(),
+      name: '',
+      email: ''
+    }));
+  }, [data, onUpdateParticipantsCb]);
 
   return (
     <Fragment>
@@ -96,11 +133,11 @@ const ParticipantsComponent = (props) => {
         Insert participants names
       </TitleWrapper>
       <Container>
-        {names.map((n, i) => (
+        {data.map((d, i) => (
           <InputComponent
-            key={`${n}_${i}`}
+            key={`${d.id}_${i}`}
             label={`Name ${i+1}`}
-            value={n}
+            value={d}
             index={i}
             onBlur={onBlurCb}
             onDelete={onDeleteCb}
