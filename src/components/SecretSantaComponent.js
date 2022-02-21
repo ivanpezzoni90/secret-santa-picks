@@ -52,9 +52,9 @@ const WizardButton = styled.div`
 
 const JSONPlaceholder = [
   {
-    name: "",
-    email: "",
-    exceptions: [""]
+    "name": "",
+    "email": "",
+    "exceptions": [""]
   }
 ];
 
@@ -238,7 +238,6 @@ const SecretSantaComponent = () => {
       <GeneralWrapper>
         {wizardStatus === 0 ? (
           <Fragment>
-            {/** TODO: Enable checkbox once participants feature is completed */}
             <Checkbox
               checked={shouldUseJson}
               label="Use JSON data"

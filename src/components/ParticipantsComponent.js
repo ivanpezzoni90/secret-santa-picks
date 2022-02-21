@@ -123,7 +123,8 @@ const ParticipantsComponent = (props) => {
     onUpdateParticipantsCb(data.concat({
       id: generateID(),
       name: '',
-      email: ''
+      email: '',
+      exceptions: []
     }));
   }, [data, onUpdateParticipantsCb]);
 

@@ -14,7 +14,8 @@ const NameWrapper = styled.div`
 `;
 const SelectWrapper = styled.div`
   padding: 0.5em;
-  min-width: 10em;
+  min-width: 20em;
+  max-width: 20em;
 `;
 const Container = styled.div`
   display: flex;
@@ -25,6 +26,11 @@ const TitleWrapper = styled.div`
   padding-bottom: 1em;
 `;
 
+const mapArrayToLabelValue = a => a.map(n => ({
+  label: n,
+  value: n
+}));
+
 const AddException = ({ value, names, onChange, index }) => {
   const {
     name,
@@ -32,12 +38,11 @@ const AddException = ({ value, names, onChange, index }) => {
     id
   } = value;
 
-  const availableNames = names
-    .filter(n => n !== name)
-    .map(n => ({
-      label: n,
-      value: n
-    }));
+  const filteredNames = names.filter(n => n !== name);
+  const availableNames = mapArrayToLabelValue(
+    filteredNames
+  );
+  const mappedExceptions = mapArrayToLabelValue(exceptions);
 
   const onSelectChange = useCallback((options) => {
     const newValues = options.map(o => o.value);
@@ -47,7 +52,7 @@ const AddException = ({ value, names, onChange, index }) => {
   return (
     <AddExceptionWrapper>
       <NameWrapper>
-        {name}
+        Exceptions for {name}:
       </NameWrapper>
       <SelectWrapper>
         <Select
@@ -55,7 +60,7 @@ const AddException = ({ value, names, onChange, index }) => {
           classNamePrefix="select"
           options={availableNames}
           isMulti
-          defaultValue={exceptions}
+          defaultValue={mappedExceptions}
           onChange={onSelectChange}
         />
       </SelectWrapper>
