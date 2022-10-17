@@ -51,6 +51,13 @@ const WizardButton = styled.div`
     padding: 0.5em 1em 0.5em 1em;
 `;
 
+const EmailJSInfoTitle = styled.div`
+    padding: 1em 0 1em 0;
+`;
+const EmailJSInfoInput = styled.div`
+    padding: 0.5em 0 0.5em 0;
+`;
+
 const JSONPlaceholder = [
     {
         'name': '',
@@ -61,12 +68,25 @@ const JSONPlaceholder = [
 
 const EMPTY_ARRAY = [];
 
+const SSDATA = 'secret-santa-data';
+const EMAILDATA = 'secret-santa-email';
+const SENDEMAIL = 'shouldSendEmails';
+
 const dataPlaceholder = [{
     id: generateID(),
     name: '',
     email: '',
     exceptions: []
 }];
+
+const setLocalStorageData = (data, key) => {
+    window.localStorage.setItem(key, JSON.stringify(data));
+};
+
+const getLocalStorageData = (key) => {
+    const data = window.localStorage.getItem(key);
+    return data ? JSON.parse(data) : undefined;
+};
 
 const getSecretSantaMessage = (sender, receiver) => {
     return `Hi ${sender}, Your secret santa is ${receiver}.`;
@@ -116,15 +136,44 @@ const sendSecretSantaMails = (picks, addressMap, emailJSService, emailJSTemplate
 
 const SecretSantaComponent = () => {
     const [shouldPrintResults, setShouldPrintResults] = useState(true);
-    const [shouldSendEmails, setShouldSendEmails] = useState(false);
     const [shouldUseJson, setShouldUseJson] = useState(false);
+    
+    const emailData = useMemo(() => {
+        return getLocalStorageData(EMAILDATA) || {};
+    }, []);
+    const sendEmailDefault = useMemo(() => {
+        return getLocalStorageData(SENDEMAIL);
+    }, []);
+    
+    const [shouldSendEmails, setShouldSendEmails] = useState(sendEmailDefault);
+    const [emailJSData, setEmailJSData] = useState(emailData);
 
-    const [emailJSUser, setEmailJSUser] = useState(null);
-    const [emailJSService, setEmailJSService] = useState(null);
-    const [emailJSTemplate, setEmailJSTemplate] = useState(null);
+    const {
+        emailJSUser,
+        emailJSService,
+        emailJSTemplate,
+    } = emailJSData;
+
+    const setEmailJSDataCb = useCallback((key) => {
+        return (newValue) => {
+            console.log('emailData', emailJSData);
+            const newData = Object.assign({}, emailJSData, {
+                [key]: newValue
+            });
+            console.log('newData', newData);
+            setEmailJSData(newData);
+            setLocalStorageData(newData, EMAILDATA);
+        };
+    }, [emailJSData]);
 
     const [picks, setPicks] = useState({});
-    const [data, setData] = useState(dataPlaceholder);
+
+    const getInitialData = useCallback(() => {
+        const existingData = getLocalStorageData(SSDATA);
+        return existingData || dataPlaceholder;
+    }, []);
+
+    const [data, setData] = useState(getInitialData());
     const [wizardStatus, setWizardStatus] = useState(0);
 
     const {
@@ -172,6 +221,7 @@ const SecretSantaComponent = () => {
 
     const onSendEmailsChange = useCallback(() => {
         setShouldSendEmails(!shouldSendEmails);
+        setLocalStorageData(!shouldSendEmails, SENDEMAIL);
     }, [shouldSendEmails]);
 
     const onUseJsonChange = useCallback(() => {
@@ -180,6 +230,8 @@ const SecretSantaComponent = () => {
 
     const onChangeJSONData = useCallback((newData) => {
         setData(newData);
+        // Set data in local storage
+        setLocalStorageData(newData, SSDATA);
     }, [setData]);
 
     const onUpdateParticipants = useCallback((participants) => {
@@ -193,6 +245,8 @@ const SecretSantaComponent = () => {
             return p;
         });
         setData(newData);
+        // Set data in local storage
+        setLocalStorageData(newData, SSDATA);
     }, [data]);
 
     const onUpdateExceptions = useCallback((exceptions, index) => {
@@ -205,14 +259,18 @@ const SecretSantaComponent = () => {
             return d;
         });
         setData(newData);
+        // Set data in local storage
+        setLocalStorageData(newData, SSDATA);
     }, [data]);
 
     const checkData = useCallback(() => {
-    // Check data integrity after each step
+        // Check data integrity after each step
 
         // Filter out blank names
         const newData = data.filter(d => d.name !== '');
         setData(newData);
+        // Set data in local storage
+        setLocalStorageData(newData, SSDATA);
 
         if (newData.length > 0) {
             return true;
@@ -290,25 +348,28 @@ const SecretSantaComponent = () => {
                         />
                         {shouldSendEmails && (
                             <div>
-                                <div>Insert EMAILJS info</div>
-                                <Input
-                                    label="User ID"
-                                    onChange={(newValue) => {
-                                        setEmailJSUser(newValue);
-                                    }}
-                                />
-                                <Input
-                                    label="Service"
-                                    onChange={(newValue) => {
-                                        setEmailJSService(newValue);
-                                    }}
-                                />
-                                <Input
-                                    label="Template ID"
-                                    onChange={(newValue) => {
-                                        setEmailJSTemplate(newValue);
-                                    }}
-                                />
+                                <EmailJSInfoTitle>Insert EMAILJS info</EmailJSInfoTitle>
+                                <EmailJSInfoInput>
+                                    <Input
+                                        label="User ID"
+                                        value={emailJSUser}
+                                        onChange={setEmailJSDataCb('emailJSUser')}
+                                    />
+                                </EmailJSInfoInput>
+                                <EmailJSInfoInput>
+                                    <Input
+                                        label="Service"
+                                        value={emailJSService}
+                                        onChange={setEmailJSDataCb('emailJSService')}
+                                    />
+                                </EmailJSInfoInput>
+                                <EmailJSInfoInput>
+                                    <Input
+                                        label="Template ID"
+                                        value={emailJSTemplate}
+                                        onChange={setEmailJSDataCb('emailJSTemplate')}
+                                    />
+                                </EmailJSInfoInput>
                             </div>
                         )}
                         <ButtonWrapper>
