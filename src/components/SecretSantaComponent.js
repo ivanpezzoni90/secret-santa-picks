@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 import React, { useCallback, useState, useMemo, Fragment } from 'react';
 import emailjs, { init } from 'emailjs-com';
-import JSONEditor from './JsonEditor';
 import { generateID } from '../helpers';
 
 import { generateSanta } from '../helpers';
@@ -57,14 +56,6 @@ const EmailJSInfoTitle = styled.div`
 const EmailJSInfoInput = styled.div`
     padding: 0.5em 0 0.5em 0;
 `;
-
-const JSONPlaceholder = [
-    {
-        'name': '',
-        'email': '',
-        'exceptions': ['']
-    }
-];
 
 const EMPTY_ARRAY = [];
 
@@ -136,7 +127,6 @@ const sendSecretSantaMails = (picks, addressMap, emailJSService, emailJSTemplate
 
 const SecretSantaComponent = () => {
     const [shouldPrintResults, setShouldPrintResults] = useState(true);
-    const [shouldUseJson, setShouldUseJson] = useState(false);
     
     const emailData = useMemo(() => {
         return getLocalStorageData(EMAILDATA) || {};
@@ -224,16 +214,6 @@ const SecretSantaComponent = () => {
         setLocalStorageData(!shouldSendEmails, SENDEMAIL);
     }, [shouldSendEmails]);
 
-    const onUseJsonChange = useCallback(() => {
-        setShouldUseJson(!shouldUseJson);
-    }, [shouldUseJson]);
-
-    const onChangeJSONData = useCallback((newData) => {
-        setData(newData);
-        // Set data in local storage
-        setLocalStorageData(newData, SSDATA);
-    }, [setData]);
-
     const onUpdateParticipants = useCallback((participants) => {
         const newData = participants.map((p, i) => {
             // Map exceptions inside participant, or return new participant
@@ -287,15 +267,6 @@ const SecretSantaComponent = () => {
         }
     }, [wizardStatus, checkData]);
 
-    const onLastWizardStep = useCallback(() => {
-        const valid = checkData();
-        if (valid) {
-            setWizardStatus(2);
-        } else {
-            alert('Insert at least one valid name');
-        }
-    }, [checkData]);
-
     const onPreviousWizardStep = useCallback(() => {
         setWizardStatus(wizardStatus - 1);
     }, [wizardStatus]);
@@ -305,23 +276,10 @@ const SecretSantaComponent = () => {
             <GeneralWrapper>
                 {wizardStatus === 0 ? (
                     <Fragment>
-                        <Checkbox
-                            checked={shouldUseJson}
-                            label="Use JSON data"
-                            shadow={false}
-                            onChange={onUseJsonChange}
+                        <ParticipantsComponent
+                            data={data}
+                            onUpdateParticipants={onUpdateParticipants}
                         />
-                        {shouldUseJson ? (
-                            <JSONEditor
-                                json={JSONPlaceholder}
-                                onChangeJSON={onChangeJSONData}
-                            />
-                        ) : (
-                            <ParticipantsComponent
-                                data={data}
-                                onUpdateParticipants={onUpdateParticipants}
-                            />
-                        )}
                     </Fragment>
                 ) : null}
                 {wizardStatus === 1 ? (
@@ -402,8 +360,7 @@ const SecretSantaComponent = () => {
                             label="Next"
                             color="#666"
                             fontSize="14px"
-                            // Go to last step when using JSON
-                            onClick={shouldUseJson ? onLastWizardStep : onNextWizardStep}
+                            onClick={onNextWizardStep}
                         />
                     </WizardButton>
                 ) : null}
