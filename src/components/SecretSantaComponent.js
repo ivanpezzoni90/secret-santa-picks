@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import React, { useCallback, useState, useMemo, Fragment } from 'react';
-import emailjs, { init } from 'emailjs-com';
+import emailjs from '@emailjs/browser';
+
 import { generateID } from '../helpers';
 
 import { generateSanta } from '../helpers';
@@ -8,7 +9,6 @@ import ParticipantsComponent from './ParticipantsComponent';
 import ExceptionsComponent from './ExceptionsComponent';
 
 import {Checkbox, Button, Input} from 'react-interface-elements';
-import { useEffect } from 'react';
 
 const ButtonWrapper = styled.div`
     padding: 2em;
@@ -106,23 +106,31 @@ const printResults = (picks) => {
     ) : null;
 };
 
-const sendSecretSantaMails = (picks, addressMap, emailJSService, emailJSTemplate) => {
-    Object.keys(picks).forEach(pick => {
+const timer = ms => new Promise(res => setTimeout(res, ms));
+
+const sendSecretSantaMails = async (
+    picks,
+    addressMap,
+    emailJSService,
+    emailJSTemplate,
+    emailJSUser
+) => {
+    for (const pick of Object.keys(picks)) {
         console.log('Secret santa for ', pick, ' is ', picks[pick]);
         console.log('Sending email to ', addressMap[pick], ': "Your secret santa is ', picks[pick], '".');
         console.log('Email body: ', getSecretSantaMessage(pick, picks[pick]));
-
         emailjs.send(emailJSService, emailJSTemplate, {
             user_name: pick,
             user_email: addressMap[pick],
             message: getSecretSantaMessage(pick, picks[pick])
-        })
+        }, emailJSUser)
             .then(function(response) {
                 console.log('SUCCESS!', response.status, response.text);
             }, function(error) {
                 console.log('FAILED...', error);
             });
-    });
+        await timer(1000);
+    }
 };
 
 const SecretSantaComponent = () => {
@@ -184,11 +192,11 @@ const SecretSantaComponent = () => {
     [data]
     );
 
-    useEffect(() => {
-        if (shouldSendEmails && emailJSUser) {
-            init(emailJSUser);
-        }
-    }, [shouldSendEmails, emailJSUser]);
+    // useEffect(() => {
+    //     if (shouldSendEmails && emailJSUser) {
+    //         init(emailJSUser);
+    //     }
+    // }, [shouldSendEmails, emailJSUser]);
 
     const generateSantaCb = useCallback(() => {
         const p = generateSanta(addressMap, exc);
@@ -200,7 +208,7 @@ const SecretSantaComponent = () => {
             if (!emailJSUser || !emailJSService || !emailJSTemplate) {
                 alert('Insert EMAILJS data to send emails');
             } else {
-                sendSecretSantaMails(p, addressMap, emailJSService, emailJSTemplate);
+                sendSecretSantaMails(p, addressMap, emailJSService, emailJSTemplate, emailJSUser);
             }
         }
     }, [addressMap, emailJSService, emailJSTemplate, emailJSUser, exc, shouldPrintResults, shouldSendEmails]);
